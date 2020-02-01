@@ -2,7 +2,6 @@ package arena
 
 import (
 	"errors"
-	"github.com/mibes/go-arena/internal/memset"
 	"unsafe"
 )
 
@@ -70,7 +69,6 @@ func (a *Arena) Alloc() unsafe.Pointer {
 		a.reAlloc(a.buffer.length * 2)
 	}
 
-	memset.Clear(a.buffer.p, uintptr(a.buffer.dataSize))
 	return a.buffer.p
 }
 
