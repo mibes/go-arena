@@ -13,21 +13,24 @@ const (
 )
 
 type Arena struct {
-	dataSize int
-	buffers  []*Buffer
-	buffer   *Buffer
+	dataSize            int
+	maxCapacityIncrease int
+	totalBytes          int
+	buffers             []*Buffer
+	buffer              *Buffer
 }
 
 type Buffer struct {
 	p        unsafe.Pointer
 	pos      int
-	length   int
+	capacity int
 	dataSize int
 	buffer   []byte
 }
 
-func newBuffer(dataSize, capacity int) *Buffer {
-	bufSize := int(math.Max(maxCapacityIncrement, float64(dataSize*capacity)))
+func newBuffer(dataSize, capacity, maxCapacity int) (*Buffer, int) {
+	newCapacity := int(math.Min(float64(capacity), float64(maxCapacity)))
+	bufSize := dataSize * newCapacity
 
 	buffer := make([]byte, bufSize, bufSize)
 	p := unsafe.Pointer(&buffer[0])
@@ -35,26 +38,29 @@ func newBuffer(dataSize, capacity int) *Buffer {
 	return &Buffer{
 		buffer:   buffer,
 		pos:      0,
-		length:   capacity,
+		capacity: newCapacity,
 		dataSize: dataSize,
 		p:        p,
-	}
+	}, bufSize
 }
 
 func NewArena(dataType interface{}) *Arena {
 	dataSize := int(unsafe.Sizeof(dataType))
-	buffer := newBuffer(dataSize, initialCapacity)
+	maxCapacity := int(math.Floor(maxCapacityIncrement / float64(dataSize)))
+	buffer, totalBytes := newBuffer(dataSize, initialCapacity, maxCapacity)
 
 	return &Arena{
-		dataSize: dataSize,
-		buffers:  []*Buffer{buffer},
-		buffer:   buffer,
+		dataSize:            dataSize,
+		buffers:             []*Buffer{buffer},
+		buffer:              buffer,
+		totalBytes:          totalBytes,
+		maxCapacityIncrease: maxCapacity,
 	}
 }
 
 func (b *Buffer) move() error {
 	b.pos++
-	if b.pos >= b.length {
+	if b.pos >= b.capacity {
 		return errors.New("out of memory")
 	}
 
@@ -64,17 +70,20 @@ func (b *Buffer) move() error {
 
 func (b *Buffer) Release() {
 	b.buffer = nil
+	b.capacity = 0
+	b.pos = 0
 }
 
 func (a *Arena) reAlloc(size int) {
-	buffer := newBuffer(a.dataSize, size)
-	a.buffers = append(a.buffers, buffer)
-	a.buffer = buffer
+	var incrBytes int
+	a.buffer, incrBytes = newBuffer(a.dataSize, size, a.maxCapacityIncrease)
+	a.totalBytes += incrBytes
+	a.buffers = append(a.buffers, a.buffer)
 }
 
 func (a *Arena) Alloc() unsafe.Pointer {
 	if err := a.buffer.move(); err != nil {
-		a.reAlloc(a.buffer.length * scaleFactor)
+		a.reAlloc(a.buffer.capacity * scaleFactor)
 	}
 
 	return a.buffer.p
@@ -83,7 +92,8 @@ func (a *Arena) Alloc() unsafe.Pointer {
 func (a *Arena) Release() {
 	for idx := range a.buffers {
 		a.buffers[idx].Release()
-		a.buffers[idx] = nil
-		a.buffer = nil
 	}
+
+	a.buffers = nil
+	a.buffer = nil
 }
