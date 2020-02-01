@@ -20,7 +20,10 @@ type Tree struct {
 func main() {
     a := arena.NewArena(Tree{})
     tree := (*Tree)(a.Alloc())
-    tree.Right = nil
+    left := (*Tree)(a.Alloc())
+    right := (*Tree)(a.Alloc())
+
+    tree.Right, tree.Left = right, left
     a.Release()
 }
 
