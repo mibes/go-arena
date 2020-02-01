@@ -18,3 +18,11 @@ func TestEmptyAllocation(t *testing.T) {
 	a.Nil(tree.Left)
 	arena.Release()
 }
+
+func BenchmarkAllocations(b *testing.B) {
+	arena := NewArena(Tree{})
+	for i := 0; i < b.N; i++ {
+		arena.Alloc()
+	}
+	arena.Release()
+}
