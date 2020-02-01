@@ -2,17 +2,20 @@ package arena
 
 import (
 	"errors"
+	"math"
 	"unsafe"
 )
 
 const (
-	initialCapacity = 1
+	initialCapacity    = 1
+	initialScaleFactor = 256.0
 )
 
 type Arena struct {
-	dataSize int
-	buffers  []*Buffer
-	buffer   *Buffer
+	dataSize    int
+	buffers     []*Buffer
+	buffer      *Buffer
+	scaleFactor float64
 }
 
 type Buffer struct {
@@ -42,9 +45,10 @@ func NewArena(dataType interface{}) *Arena {
 	buffer := newBuffer(dataSize, initialCapacity)
 
 	return &Arena{
-		dataSize: dataSize,
-		buffers:  []*Buffer{buffer},
-		buffer:   buffer,
+		dataSize:    dataSize,
+		buffers:     []*Buffer{buffer},
+		buffer:      buffer,
+		scaleFactor: initialScaleFactor,
 	}
 }
 
@@ -66,7 +70,8 @@ func (a *Arena) reAlloc(size int) {
 
 func (a *Arena) Alloc() unsafe.Pointer {
 	if err := a.buffer.move(); err != nil {
-		a.reAlloc(a.buffer.length * 2)
+		a.reAlloc(int(float64(a.buffer.length) * a.scaleFactor))
+		a.scaleFactor = math.Sqrt(a.scaleFactor)
 	}
 
 	return a.buffer.p
