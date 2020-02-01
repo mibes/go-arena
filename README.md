@@ -5,7 +5,7 @@ Experimental pooled memory allocator for Go.
 
 It can be used like this:
 
-```go 
+```go
 package main
 
 import (
@@ -27,4 +27,28 @@ func main() {
     a.Release()
 }
 
+```
+
+Alternative example:
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/mibes/go-arena/pkg/arena"
+)
+
+type User struct {
+    firstName string
+    lastName  string
+    age       int
+}
+
+func main() {
+    a := arena.NewArena(User{})
+    user := (*User)(a.Alloc())
+    user.firstName = "Marcel"
+    fmt.Printf("%s %s: %d\n", user.firstName, user.lastName, user.age)
+    a.Release()
+}
 ```
