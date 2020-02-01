@@ -81,6 +81,7 @@ func (a *Arena) reAlloc(size int) {
 	a.buffers = append(a.buffers, a.buffer)
 }
 
+// Alloc allocates the memory needed to hold 1 object of the type the Arena was initialized with.
 func (a *Arena) Alloc() unsafe.Pointer {
 	if err := a.buffer.move(); err != nil {
 		a.reAlloc(a.buffer.capacity * scaleFactor)
