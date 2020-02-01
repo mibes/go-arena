@@ -18,8 +18,10 @@ type Tree struct {
 }
 
 func main() {
-    arena := NewArena(Tree{})
-    tree := (*Tree)(arena.Alloc())
-    arena.Release()
+    a := arena.NewArena(Tree{})
+    tree := (*Tree)(a.Alloc())
+    tree.Right = nil
+    a.Release()
 }
+
 ```
