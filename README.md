@@ -8,13 +8,13 @@ It can be used like this:
 ```go 
 
 type Tree struct {
-	Left  *Tree
-	Right *Tree
+    Left  *Tree
+    Right *Tree
 }
 
 func main() {
     arena := NewArena(Tree{})
-	tree := (*Tree)(arena.Alloc())
-	arena.Release()
+    tree := (*Tree)(arena.Alloc())
+    arena.Release()
 }
 ```
