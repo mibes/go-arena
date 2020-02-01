@@ -8,7 +8,7 @@ import (
 
 const (
 	initialCapacity      = 1
-	scaleFactor          = 2.0
+	scaleFactor          = 2
 	maxCapacityIncrement = 1024 * 1024 * 128 // 128 Megabyte
 )
 
@@ -27,7 +27,8 @@ type Buffer struct {
 }
 
 func newBuffer(dataSize, capacity int) *Buffer {
-	bufSize := dataSize * capacity
+	bufSize := int(math.Max(maxCapacityIncrement, float64(dataSize*capacity)))
+
 	buffer := make([]byte, bufSize, bufSize)
 	p := unsafe.Pointer(&buffer[0])
 
@@ -73,7 +74,7 @@ func (a *Arena) reAlloc(size int) {
 
 func (a *Arena) Alloc() unsafe.Pointer {
 	if err := a.buffer.move(); err != nil {
-		a.reAlloc(int(math.Max(maxCapacityIncrement, float64(a.buffer.length)*scaleFactor)))
+		a.reAlloc(a.buffer.length * scaleFactor)
 	}
 
 	return a.buffer.p
