@@ -8,7 +8,7 @@ import (
 
 const (
 	initialCapacity    = 1
-	initialScaleFactor = 256.0
+	initialScaleFactor = 65536.0
 )
 
 type Arena struct {
