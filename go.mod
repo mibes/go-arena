@@ -1,4 +1,4 @@
-module github.com/mibes/go-arena.git
+module github.com/mibes/go-arena
 
 go 1.13
 
