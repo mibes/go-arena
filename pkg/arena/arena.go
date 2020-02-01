@@ -7,15 +7,15 @@ import (
 )
 
 const (
-	initialCapacity    = 1
-	initialScaleFactor = 65536.0
+	initialCapacity      = 1
+	scaleFactor          = 2.0
+	maxCapacityIncrement = 1024 * 1024 * 128 // 128 Megabyte
 )
 
 type Arena struct {
-	dataSize    int
-	buffers     []*Buffer
-	buffer      *Buffer
-	scaleFactor float64
+	dataSize int
+	buffers  []*Buffer
+	buffer   *Buffer
 }
 
 type Buffer struct {
@@ -45,10 +45,9 @@ func NewArena(dataType interface{}) *Arena {
 	buffer := newBuffer(dataSize, initialCapacity)
 
 	return &Arena{
-		dataSize:    dataSize,
-		buffers:     []*Buffer{buffer},
-		buffer:      buffer,
-		scaleFactor: initialScaleFactor,
+		dataSize: dataSize,
+		buffers:  []*Buffer{buffer},
+		buffer:   buffer,
 	}
 }
 
@@ -62,6 +61,10 @@ func (b *Buffer) move() error {
 	return nil
 }
 
+func (b *Buffer) Release() {
+	b.buffer = nil
+}
+
 func (a *Arena) reAlloc(size int) {
 	buffer := newBuffer(a.dataSize, size)
 	a.buffers = append(a.buffers, buffer)
@@ -70,8 +73,7 @@ func (a *Arena) reAlloc(size int) {
 
 func (a *Arena) Alloc() unsafe.Pointer {
 	if err := a.buffer.move(); err != nil {
-		a.reAlloc(int(float64(a.buffer.length) * a.scaleFactor))
-		a.scaleFactor = math.Sqrt(a.scaleFactor)
+		a.reAlloc(int(math.Max(maxCapacityIncrement, float64(a.buffer.length)*scaleFactor)))
 	}
 
 	return a.buffer.p
@@ -79,6 +81,8 @@ func (a *Arena) Alloc() unsafe.Pointer {
 
 func (a *Arena) Release() {
 	for idx := range a.buffers {
+		a.buffers[idx].Release()
 		a.buffers[idx] = nil
+		a.buffer = nil
 	}
 }
